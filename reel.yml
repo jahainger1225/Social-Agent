@@ -1,0 +1,39 @@
+name: reel
+on:
+  schedule:
+    - cron: "0 13 * * *"   # 6:00 PM Pakistan
+    - cron: "0 1 * * *"    # 6:00 AM Pakistan (USA prime time)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Test mode (publish nahi karega)"
+        type: boolean
+        default: true
+permissions:
+  contents: write
+concurrency: agent
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: pip install -r requirements.txt
+      - run: |
+          git config user.name "agent"
+          git config user.email "agent@users.noreply.github.com"
+      - run: python post.py reel
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          META_TOKEN: ${{ secrets.META_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.dry_run }}
+        with:
+          name: preview
+          path: out/
