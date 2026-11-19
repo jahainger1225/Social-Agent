@@ -1,6 +1,6 @@
 import os, json, requests
 
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODELS = [m for m in [os.getenv("GEMINI_MODEL"), "gemini-3.6-flash", "gemini-3.7-flash", "gemini-3.5-flash", "gemini-2.5-flash"] if m]
 PRODUCTS_FILE = "products.json"
 
 
@@ -9,15 +9,23 @@ def gemini(prompt, search=False):
     body = {"contents": [{"parts": [{"text": prompt}]}]}
     if search:
         body["tools"] = [{"google_search": {}}]
-    r = requests.post(
-        f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent",
-        headers={"x-goog-api-key": key},
-        json=body,
-        timeout=180,
-    )
-    r.raise_for_status()
-    parts = r.json()["candidates"][0]["content"]["parts"]
-    return "".join(p.get("text", "") for p in parts)
+    last = None
+    for model in MODELS:
+        r = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            headers={"x-goog-api-key": key},
+            json=body,
+            timeout=180,
+        )
+        if r.status_code in (404, 400):
+            print(f"Model {model} failed: {r.status_code} {r.text[:300]}")
+            last = r
+            continue
+        r.raise_for_status()
+        print("Using model:", model)
+        parts = r.json()["candidates"][0]["content"]["parts"]
+        return "".join(p.get("text", "") for p in parts)
+    last.raise_for_status()
 
 
 def extract_json(text):
