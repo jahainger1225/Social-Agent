@@ -1,1 +1,41 @@
-[]
+[
+  {
+    "id": "ef2e1550",
+    "date": "2026-11-19",
+    "title": "Amazon Echo Dot (5th Gen)",
+    "category": "gadgets",
+    "brand": "Amazon",
+    "description": "Smart speaker with Alexa featuring improved audio, deep bass, vibrant vocals, and built-in temperature sensor for smart home integration.",
+    "why_trending": "High seasonal demand for smart home devices and affordable holiday gifting.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
+  },
+  {
+    "id": "9128f318",
+    "date": "2026-11-19",
+    "title": "Furbo 360° Dog Camera",
+    "category": "pets",
+    "brand": "Furbo",
+    "description": "Interactive pet camera offering 360-degree rotating view, 1080p HD video, color night vision, 2-way audio, and a tossable treat feature.",
+    "why_trending": "Popular choice for pet owners looking to monitor and entertain animals during holiday travel seasons.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
+  },
+  {
+    "id": "e57d3931",
+    "date": "2026-11-19",
+    "title": "Fitbit Charge 6",
+    "category": "fitness",
+    "brand": "Fitbit",
+    "description": "Advanced fitness and health tracker featuring Google apps integration, ECG app, GPS, sleep tracking, and up to 7 days of battery life.",
+    "why_trending": "Strong seasonal surge driven by New Year fitness resolutions and health-focused holiday gift shoppers.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
+  }
+]
