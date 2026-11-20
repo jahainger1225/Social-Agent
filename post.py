@@ -17,12 +17,13 @@ DISCLOSURE = "Affiliate disclosure: this post contains affiliate links and I may
 
 
 def default_link():
-    """Auto mode: ek hi Benable link (profile/list) jo un products ke liye use hota hai jin ka apna link nahi."""
+    """Benable profile fallback; product-specific Benable links take priority."""
+    profile = "https://benable.com/MYCHOICE12"
     try:
         with open("config.json", encoding="utf-8") as f:
-            return json.load(f).get("default_link", "").strip()
+            return json.load(f).get("default_link", "").strip() or profile
     except Exception:
-        return ""
+        return profile
 
 
 def git(*a):
@@ -201,7 +202,10 @@ def main():
     cands = [x for x in products if not x.get(f"posted_{KIND}") and (x.get("benable_link") or fallback)]
     cands.sort(key=lambda x: 0 if x.get("benable_link") else 1)  # jin ka apna link hai wo pehle
     if not cands:
-        print(f"Koi product {KIND} ke liye tayyar nahi (na product link, na config.json mein default_link). Nothing to do.")
+        os.makedirs("out", exist_ok=True)
+        with open("out/NO_PRODUCT.txt", "w", encoding="utf-8") as f:
+            f.write(f"No eligible product found for {KIND}. Research workflow must add products first.\\n")
+        print(f"No eligible product found for {KIND}; diagnostic saved in out/NO_PRODUCT.txt")
         return
     p = cands[0]
     link = p.get("benable_link") or fallback
@@ -210,6 +214,8 @@ def main():
     path = build_media(p, c)
     print("PRODUCT:", p["title"], "\n--- IG caption ---\n", ig_cap, "\n--- FB caption ---\n", fb_cap)
     if DRY:
+        with open(f"out/{KIND}-preview.txt", "w", encoding="utf-8") as f:
+            f.write(f"Product: {p['title']}\\nCategory: {p.get('category','')}\\nBenable profile: {link}\\n\\nInstagram caption:\\n{ig_cap}\\n\\nFacebook caption:\\n{fb_cap}\\n\\nMedia file: {path}\\n\\nPREVIEW ONLY — nothing was published.\\n")
         print("DRY RUN: media saved at", path)
         return
     url, dest = host(path)
