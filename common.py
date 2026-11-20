@@ -48,7 +48,7 @@ def _try(prompt, search, models, rounds=1):
 
 def gemini(prompt, search=False, require_search=False):
     if search:
-        text = _try(prompt, True, MODELS[:1])
+        text = _try(prompt, True, MODELS, rounds=1)
         if text:
             return text
         if require_search:
