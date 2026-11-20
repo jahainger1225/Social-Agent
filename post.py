@@ -1,7 +1,7 @@
 """Usage: python post.py post|reel
 Picks the first product that has a benable_link and has not been posted in this format,
 writes the copy with Gemini, builds the media, publishes to Instagram + Facebook Page."""
-import os, sys, io, json, time, shutil, random, subprocess
+import os, sys, io, time, shutil, subprocess
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from common import gemini, extract_json, load_products, save_products
@@ -13,7 +13,7 @@ IG = os.getenv("IG_USER_ID")
 PAGE = os.getenv("FB_PAGE_ID")
 GRAPH = f"https://graph.facebook.com/{os.getenv('GRAPH_VERSION', 'v23.0')}"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-DISCLOSURE = "Affiliate disclosure: this post contains affiliate links and I may earn a small commission at no extra cost to you."
+PROFILE_LINK = "https://benable.com/MYCHOICE12"
 
 
 def default_link():
@@ -32,7 +32,7 @@ def git(*a):
 
 # ---------- copywriting ----------
 def make_copy(p):
-    prompt = f"""Write social media copy for this product. Audience: USA, UK, Canada, Australia, NZ.
+    prompt = f"""Write social media copy for this product. Audience: global English-speaking shoppers.
 Product: {p['title']}
 Facts (use ONLY these, do not invent features or claims): {p['description']}
 
@@ -45,20 +45,20 @@ Rules: no medical or income claims, no fake urgency or fake discounts, no 'best 
 
 def captions(p, c, link):
     tags = " ".join("#" + t.strip("# ").replace(" ", "") for t in c["hashtags"][:10])
-    ig = f"{c['caption']}\n\nLink in bio\n\n{DISCLOSURE}\n\n{tags} #affiliate"
-    fb = f"{c['caption']}\n\nGet it here: {link}\n\n{DISCLOSURE}\n\n{tags} #affiliate"
-    return ig, fb
+    cta = f"Check this link if you want to buy:\\n{PROFILE_LINK}"
+    caption = f"{c['caption']}\\n\\n{cta}\\n\\n{tags}"
+    return caption, caption
 
 
 # ---------- images ----------
 def fetch_image(url):
-    try:
-        r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
-        r.raise_for_status()
-        return Image.open(io.BytesIO(r.content)).convert("RGB")
-    except Exception as e:
-        print("Image download failed, using text card:", e)
-        return None
+    if not url:
+        raise RuntimeError("Product has no exact product image URL; refusing generic image.")
+    r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    r.raise_for_status()
+    if not r.headers.get("Content-Type", "").lower().startswith("image/"):
+        raise RuntimeError("Product image URL did not return image content.")
+    return Image.open(io.BytesIO(r.content)).convert("RGB")
 
 
 def cover(img, w, h):
@@ -68,16 +68,6 @@ def cover(img, w, h):
     return img.crop((x, y, x + w, y + h))
 
 
-def gradient(w, h, seed):
-    random.seed(seed)
-    c1 = tuple(random.randint(20, 110) for _ in range(3))
-    c2 = tuple(random.randint(90, 200) for _ in range(3))
-    img = Image.new("RGB", (w, h))
-    px = ImageDraw.Draw(img)
-    for y in range(h):
-        t = y / h
-        px.line([(0, y), (w, y)], fill=tuple(int(c1[i] * (1 - t) + c2[i] * t) for i in range(3)))
-    return img
 
 
 def wrap(d, text, font, max_w):
@@ -95,7 +85,7 @@ def wrap(d, text, font, max_w):
 
 
 def render(w, h, bg, text, size, pos="bottom", footer=None):
-    base = (cover(bg, w, h) if bg else gradient(w, h, text)).convert("RGBA")
+    base = cover(bg, w, h).convert("RGBA")
     font = ImageFont.truetype(FONT, size)
     d = ImageDraw.Draw(base)
     lines = wrap(d, text, font, int(w * 0.84))
@@ -116,17 +106,17 @@ def render(w, h, bg, text, size, pos="bottom", footer=None):
 
 def build_media(p, c):
     os.makedirs("out", exist_ok=True)
-    bg = fetch_image(p["image_url"]) if p.get("image_url") else None
+    bg = fetch_image(p["image_url"])
     stamp = time.strftime("%Y%m%d-%H%M%S")
     if KIND == "post":
-        img = render(1080, 1350, bg, p["title"], 64, "bottom", footer="Link in bio | Affiliate")
+        img = render(1080, 1350, bg, p["title"], 64, "bottom", footer="See Benable profile")
         path = f"out/post-{stamp}.jpg"
         img.save(path, quality=92)
         return path
     frames = [
-        render(1080, 1920, None, c["hook"], 84, "center"),
+        render(1080, 1920, bg, c["hook"], 84, "center"),
         render(1080, 1920, bg, p["title"], 70, "bottom"),
-        render(1080, 1920, None, "Link in bio", 90, "center", footer="Affiliate link. I may earn a commission."),
+        render(1080, 1920, bg, "Shop through my Benable profile", 72, "center"),
     ]
     for i, f in enumerate(frames):
         f.save(f"out/f{i}.png")
@@ -199,8 +189,8 @@ def fb_publish(url, message):
 def main():
     products = load_products()
     fallback = default_link()
-    cands = [x for x in products if not x.get(f"posted_{KIND}") and (x.get("benable_link") or fallback)]
-    cands.sort(key=lambda x: 0 if x.get("benable_link") else 1)  # jin ka apna link hai wo pehle
+    cands = [x for x in products if not x.get(f"posted_{KIND}") and x.get("image_url") and x.get("source_url")]
+    cands.sort(key=lambda x: x.get("date", ""))
     if not cands:
         os.makedirs("out", exist_ok=True)
         with open("out/NO_PRODUCT.txt", "w", encoding="utf-8") as f:
@@ -208,7 +198,7 @@ def main():
         print(f"No eligible product found for {KIND}; diagnostic saved in out/NO_PRODUCT.txt")
         return
     p = cands[0]
-    link = p.get("benable_link") or fallback
+    link = PROFILE_LINK
     c = make_copy(p)
     ig_cap, fb_cap = captions(p, c, link)
     path = build_media(p, c)
