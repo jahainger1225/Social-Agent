@@ -46,11 +46,13 @@ def _try(prompt, search, models, rounds=1):
     return None
 
 
-def gemini(prompt, search=False):
+def gemini(prompt, search=False, require_search=False):
     if search:
         text = _try(prompt, True, MODELS[:1])
         if text:
             return text
+        if require_search:
+            raise RuntimeError("Live Google Search unavailable. Strict research stopped; no unverified products will be added.")
         print("WARNING: web search nahi chala, bina search ke aage barh rahe hain.")
         prompt += NO_SEARCH_NOTE
     text = _try(prompt, False, MODELS, rounds=2)
