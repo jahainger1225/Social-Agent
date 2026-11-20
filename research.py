@@ -11,13 +11,12 @@ todays_cats = [CATS[(d * 3 + i) % len(CATS)] for i in range(3)]
 products = load_products()
 known = [p.get("title", "") for p in products]
 
-prompt = f"""Today is {today.isoformat()}. Research products currently selling the MOST in the UNITED STATES.
+prompt = f"""Today is {today.isoformat()}. Research products currently selling the MOST WORLDWIDE, across all major regions and countries.
 Use live Google Search evidence, not guesses, old popularity, social-media hype alone, or generic evergreen recommendations.
-Find 3 distinct physical products from these categories: {', '.join(todays_cats)}.
+Find 3 distinct physical products with global demand from these categories: {', '.join(todays_cats)}.
 PRIORITY: products with the strongest recent sales evidence available (units sold, revenue, bestseller rank,
-"bought in past month", or current marketplace sales ranking). Prefer evidence from the last 7-30 days.
-Check Amazon Best Sellers / bought-in-past-month figures, Walmart best sellers, TikTok Shop US sales analytics,
-and other credible current retailer/marketplace sources. Do not claim an exact sales figure unless a source states it.
+"bought in past month", or current marketplace sales ranking). Prefer evidence from the last 7-30 days and compare demand across countries/regions where possible.
+Check Amazon Best Sellers and bought-in-past-month figures across major country marketplaces (Amazon US, UK, Canada, Germany, France, Italy, Spain, Japan, Australia, etc.); Walmart; eBay; Etsy; AliExpress; Temu; TikTok Shop across available countries; major regional retailers and marketplaces in Europe, Asia-Pacific, the Middle East, Latin America and other regions. Use the sources that provide accessible, credible, recent sales evidence. Do not limit research to the USA or to Amazon/Walmart. Do not claim an exact sales figure unless a source states it.
 For each product include a concise sales_evidence field with the source name, date/window, and exact metric/rank
 if available, plus a source_url to the specific product listing or sales evidence page.
 Avoid products already used: {known}.
