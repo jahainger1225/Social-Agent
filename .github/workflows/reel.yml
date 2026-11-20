@@ -27,7 +27,8 @@ jobs:
           git config user.email "agent@users.noreply.github.com"
       - run: python post.py reel
         env:
-          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          # Scheduled runs stay in preview mode; live publishing only via manual dispatch with dry_run unchecked.
+          DRY_RUN: ${{ github.event_name == 'schedule' && '1' || (inputs.dry_run && '1' || '0') }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           META_TOKEN: ${{ secrets.META_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
