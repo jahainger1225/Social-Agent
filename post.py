@@ -1,5 +1,5 @@
 """Usage: python post.py post|reel
-Picks the first product that has a benable_link and has not been posted in this format,
+Picks the first product with an exact product image and source page that has not been posted in this format,
 writes the copy with Gemini, builds the media, publishes to Instagram + Facebook Page."""
 import os, sys, io, time, shutil, subprocess
 import requests
@@ -14,16 +14,6 @@ PAGE = os.getenv("FB_PAGE_ID")
 GRAPH = f"https://graph.facebook.com/{os.getenv('GRAPH_VERSION', 'v23.0')}"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 PROFILE_LINK = "https://benable.com/MYCHOICE12"
-
-
-def default_link():
-    """Benable profile fallback; product-specific Benable links take priority."""
-    profile = "https://benable.com/MYCHOICE12"
-    try:
-        with open("config.json", encoding="utf-8") as f:
-            return json.load(f).get("default_link", "").strip() or profile
-    except Exception:
-        return profile
 
 
 def git(*a):
@@ -45,8 +35,8 @@ Rules: no medical or income claims, no fake urgency or fake discounts, no 'best 
 
 def captions(p, c, link):
     tags = " ".join("#" + t.strip("# ").replace(" ", "") for t in c["hashtags"][:10])
-    cta = f"Check this link if you want to buy:\\n{PROFILE_LINK}"
-    caption = f"{c['caption']}\\n\\n{cta}\\n\\n{tags}"
+    cta = f"Check this link if you want to buy:\n{PROFILE_LINK}"
+    caption = f"{c['caption']}\n\n{cta}\n\n{tags}"
     return caption, caption
 
 
@@ -188,7 +178,6 @@ def fb_publish(url, message):
 
 def main():
     products = load_products()
-    fallback = default_link()
     cands = [x for x in products if not x.get(f"posted_{KIND}") and x.get("image_url") and x.get("source_url")]
     cands.sort(key=lambda x: x.get("date", ""))
     if not cands:
