@@ -1,4 +1,4 @@
-"""Daily research: prioritize products with evidence of current sales in the USA."""
+"""Daily worldwide research: select products using recent, verifiable cross-market sales evidence."""
 import datetime, uuid
 import requests
 from common import gemini, extract_json, load_products, save_products
@@ -78,7 +78,7 @@ if not new:
 products.extend(new)
 save_products(products)
 with open("TODAY.md", "w", encoding="utf-8") as f:
-    f.write(f"# USA ke current high-sales products ({today.isoformat()})\\n\\n")
+    f.write(f"# Worldwide high-sales product research ({today.isoformat()})\\n\\n")
     f.write("In products ko Benable mein manually add karein. Selection recent sales evidence par based hai.\\n\\n")
     for p in new:
         f.write(f"## {p['title']}\\n- Category: {p['category']} | Brand: {p['brand']}\\n")
