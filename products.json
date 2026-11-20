@@ -37,5 +37,44 @@
     "benable_link": "",
     "posted_post": false,
     "posted_reel": false
+  },
+  {
+    "id": "7cb666f8",
+    "date": "2026-11-20",
+    "title": "Stanley Quencher H2.0 FlowState Tumbler (40 oz)",
+    "category": "home",
+    "brand": "Stanley",
+    "description": "Double-wall vacuum insulated stainless steel tumbler with a 40 oz capacity, ergonomic handle, and FlowState screw-on 3-position lid. Keeps drinks cold for hours.",
+    "why_trending": "Highly popular across social media as a top holiday gift item with widespread availability across major retailers.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
+  },
+  {
+    "id": "3aceb746",
+    "date": "2026-11-20",
+    "title": "Laneige Lip Sleeping Mask",
+    "category": "beauty",
+    "brand": "Laneige",
+    "description": "Leave-on lip mask enriched with vitamin C and antioxidants that delivers intense moisture and nourishment overnight for smooth, hydrated lips.",
+    "why_trending": "Remains a top-selling holiday beauty staple and ideal stocking stuffer across major cosmetic retailers globally.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
+  },
+  {
+    "id": "7815c781",
+    "date": "2026-11-20",
+    "title": "UGG Tazz Slipper",
+    "category": "fashion",
+    "brand": "UGG",
+    "description": "Slip-on platform slipper crafted with suede upper, signature UGGbraid trim, soft UGGplush upcycled wool lining, and a lightweight EVA outsole.",
+    "why_trending": "Experiences immense seasonal holiday demand as a stylish winter footwear option and popular gift choice.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
   }
 ]
