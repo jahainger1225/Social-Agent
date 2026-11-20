@@ -1,7 +1,7 @@
 """Usage: python post.py post|reel
 Picks the first product that has a benable_link and has not been posted in this format,
 writes the copy with Gemini, builds the media, publishes to Instagram + Facebook Page."""
-import os, sys, io, time, shutil, random, subprocess
+import os, sys, io, json, time, shutil, random, subprocess
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from common import gemini, extract_json, load_products, save_products
@@ -14,6 +14,15 @@ PAGE = os.getenv("FB_PAGE_ID")
 GRAPH = f"https://graph.facebook.com/{os.getenv('GRAPH_VERSION', 'v23.0')}"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 DISCLOSURE = "Affiliate disclosure: this post contains affiliate links and I may earn a small commission at no extra cost to you."
+
+
+def default_link():
+    """Auto mode: ek hi Benable link (profile/list) jo un products ke liye use hota hai jin ka apna link nahi."""
+    try:
+        with open("config.json", encoding="utf-8") as f:
+            return json.load(f).get("default_link", "").strip()
+    except Exception:
+        return ""
 
 
 def git(*a):
@@ -33,10 +42,10 @@ Rules: no medical or income claims, no fake urgency or fake discounts, no 'best 
     return extract_json(gemini(prompt))
 
 
-def captions(p, c):
+def captions(p, c, link):
     tags = " ".join("#" + t.strip("# ").replace(" ", "") for t in c["hashtags"][:10])
     ig = f"{c['caption']}\n\nLink in bio\n\n{DISCLOSURE}\n\n{tags} #affiliate"
-    fb = f"{c['caption']}\n\nGet it here: {p['benable_link']}\n\n{DISCLOSURE}\n\n{tags} #affiliate"
+    fb = f"{c['caption']}\n\nGet it here: {link}\n\n{DISCLOSURE}\n\n{tags} #affiliate"
     return ig, fb
 
 
@@ -188,12 +197,16 @@ def fb_publish(url, message):
 
 def main():
     products = load_products()
-    p = next((x for x in products if x.get("benable_link") and not x.get(f"posted_{KIND}")), None)
-    if not p:
-        print(f"No product with a benable_link waiting for a {KIND}. Nothing to do.")
+    fallback = default_link()
+    cands = [x for x in products if not x.get(f"posted_{KIND}") and (x.get("benable_link") or fallback)]
+    cands.sort(key=lambda x: 0 if x.get("benable_link") else 1)  # jin ka apna link hai wo pehle
+    if not cands:
+        print(f"Koi product {KIND} ke liye tayyar nahi (na product link, na config.json mein default_link). Nothing to do.")
         return
+    p = cands[0]
+    link = p.get("benable_link") or fallback
     c = make_copy(p)
-    ig_cap, fb_cap = captions(p, c)
+    ig_cap, fb_cap = captions(p, c, link)
     path = build_media(p, c)
     print("PRODUCT:", p["title"], "\n--- IG caption ---\n", ig_cap, "\n--- FB caption ---\n", fb_cap)
     if DRY:
