@@ -4,21 +4,21 @@ Har product ko Benable mein add karein, phir products.json mein uske saamne
 `"benable_link": ""` ke andar apna Benable link paste karein.
 (Optional) `"image_url"` mein product ki official image ka link daal sakte hain.
 
-## Stanley Quencher H2.0 FlowState Tumbler (40 oz)
-- Category: home | Brand: Stanley
-- Description: Double-wall vacuum insulated stainless steel tumbler with a 40 oz capacity, ergonomic handle, and FlowState screw-on 3-position lid. Keeps drinks cold for hours.
-- Kyun trending: Highly popular across social media as a top holiday gift item with widespread availability across major retailers.
-- id: 7cb666f8
+## Dyson V15 Detect Cordless Vacuum
+- Category: Home | Brand: Dyson
+- Description: A cordless vacuum cleaner featuring an illumination system to reveal invisible dust on hard floors and an LCD screen displaying particle counts.
+- Kyun trending: High holiday gift demand for premium home appliances makes this a top seller across major English-speaking markets.
+- id: 2c53620c
 
-## Laneige Lip Sleeping Mask
-- Category: beauty | Brand: Laneige
-- Description: Leave-on lip mask enriched with vitamin C and antioxidants that delivers intense moisture and nourishment overnight for smooth, hydrated lips.
-- Kyun trending: Remains a top-selling holiday beauty staple and ideal stocking stuffer across major cosmetic retailers globally.
-- id: 3aceb746
+## Sol de Janeiro Brazilian Bum Bum Cream
+- Category: Beauty | Brand: Sol de Janeiro
+- Description: A fast-absorbing body cream formulated with guaraná extract and cupuaçu butter, featuring a pistachio and salted caramel fragrance.
+- Kyun trending: Viral social media popularity and strong seasonal gifting appeal keep it among the top beauty best-sellers internationally.
+- id: 2acb566d
 
-## UGG Tazz Slipper
-- Category: fashion | Brand: UGG
-- Description: Slip-on platform slipper crafted with suede upper, signature UGGbraid trim, soft UGGplush upcycled wool lining, and a lightweight EVA outsole.
-- Kyun trending: Experiences immense seasonal holiday demand as a stylish winter footwear option and popular gift choice.
-- id: 7815c781
+## Lululemon Everywhere Belt Bag 1L
+- Category: Fashion | Brand: Lululemon
+- Description: A water-repellent belt bag designed with exterior zip pockets and interior mesh sleeves for carrying everyday essentials on the go.
+- Kyun trending: It remains an affordable luxury staple and a high-demand stocking stuffer across global markets during the holiday season.
+- id: 2904fe97
 

@@ -76,5 +76,44 @@
     "benable_link": "",
     "posted_post": false,
     "posted_reel": false
+  },
+  {
+    "id": "2c53620c",
+    "date": "2026-11-20",
+    "title": "Dyson V15 Detect Cordless Vacuum",
+    "category": "Home",
+    "brand": "Dyson",
+    "description": "A cordless vacuum cleaner featuring an illumination system to reveal invisible dust on hard floors and an LCD screen displaying particle counts.",
+    "why_trending": "High holiday gift demand for premium home appliances makes this a top seller across major English-speaking markets.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
+  },
+  {
+    "id": "2acb566d",
+    "date": "2026-11-20",
+    "title": "Sol de Janeiro Brazilian Bum Bum Cream",
+    "category": "Beauty",
+    "brand": "Sol de Janeiro",
+    "description": "A fast-absorbing body cream formulated with guaraná extract and cupuaçu butter, featuring a pistachio and salted caramel fragrance.",
+    "why_trending": "Viral social media popularity and strong seasonal gifting appeal keep it among the top beauty best-sellers internationally.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
+  },
+  {
+    "id": "2904fe97",
+    "date": "2026-11-20",
+    "title": "Lululemon Everywhere Belt Bag 1L",
+    "category": "Fashion",
+    "brand": "Lululemon",
+    "description": "A water-repellent belt bag designed with exterior zip pockets and interior mesh sleeves for carrying everyday essentials on the go.",
+    "why_trending": "It remains an affordable luxury staple and a high-demand stocking stuffer across global markets during the holiday season.",
+    "image_url": "",
+    "benable_link": "",
+    "posted_post": false,
+    "posted_reel": false
   }
 ]
