@@ -8,7 +8,7 @@ d = today.toordinal()
 todays_cats = [CATS[(d * 3 + i) % len(CATS)] for i in range(3)]
 
 products = load_products()
-known = [p["title"] for p in products][-60:]
+known = [p.get("title", "") for p in products]
 
 prompt = f"""Today is {today.isoformat()}. Use Google Search to find 3 products that are
 trending or selling very well right now with shoppers in the USA, UK, Canada, Australia and
@@ -24,9 +24,20 @@ Return ONLY a JSON array of 3 objects with keys:
 "brand".
 No markdown, no extra text."""
 
-items = extract_json(gemini(prompt, search=True))[:3]
+items = extract_json(gemini(prompt, search=True))
+if not isinstance(items, list) or not items:
+    raise RuntimeError("Research returned no product list; products.json was not changed.")
 new = []
+seen = {x.strip().casefold() for x in known if x}
 for it in items:
+    if not isinstance(it, dict) or not it.get("title") or not it.get("description"):
+        print("Skipping incomplete research result:", it)
+        continue
+    title_key = it["title"].strip().casefold()
+    if title_key in seen:
+        print("Skipping duplicate product:", it["title"])
+        continue
+    seen.add(title_key)
     new.append(
         {
             "id": uuid.uuid4().hex[:8],
@@ -42,6 +53,8 @@ for it in items:
             "posted_reel": False,
         }
     )
+if not new:
+    raise RuntimeError("Research found no new complete products; products.json was not changed.")
 products.extend(new)
 save_products(products)
 
