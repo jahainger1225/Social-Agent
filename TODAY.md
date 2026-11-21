@@ -1,5 +1,1 @@
-# Amazon US deals (2026-11-21)
-
-Free public search. Only product pages with a verified discount of 30% or more are included. Prices may change; check Amazon before sharing.
-
-No product passed the Amazon page, image and price verification checks today. Nothing unverified was added.
+# Amazon US deals (2026-11-21)\n\nFree public search. Only product pages with a verified discount of 30% or more are included. Prices may change; check Amazon before sharing.\n\nNo product passed the Amazon page, image and price verification checks today. Search candidates are not treated as confirmed deals.\n
