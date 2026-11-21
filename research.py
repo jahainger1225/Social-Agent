@@ -40,7 +40,7 @@ SESSION.headers.update(HEADERS)
 
 # A result is eligible only if its own text states a sales or bestseller signal.
 SALES_SIGNAL = re.compile(
-    r"(\b[\d,.]+\s*(?:k\\+?\s*)?(?:sold|purchased)\b|"
+    r"(\b[\d,.]+\s*(?:k\+?\s*)?(?:sold|purchased)\b|"
     r"\b(?:best\s*seller|bestseller|best-selling|top\s*selling)\b|"
     r"\b(?:bought|purchased)\s+in\s+past\s+month\b|"
     r"\b\d[\d,]*\s+reviews?\b)",
