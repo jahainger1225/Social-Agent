@@ -2,10 +2,12 @@ name: research
 on:
   schedule:
     - cron: "0 2 * * *"   # 7:00 AM Pakistan time
-  workflow_dispatch
+  workflow_dispatch:
 permissions:
   contents: write
-concurrency: agent
+concurrency:
+  group: agent
+  cancel-in-progress: false
 jobs:
   run:
     runs-on: ubuntu-latest
