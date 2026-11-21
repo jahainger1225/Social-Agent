@@ -40,16 +40,16 @@ SESSION.headers.update(HEADERS)
 
 # A result is eligible only if its own text states a sales or bestseller signal.
 SALES_SIGNAL = re.compile(
-    r"(\\b[\\d,.]+\\s*(?:k\\+?\\s*)?(?:sold|purchased)\\b|"
-    r"\\b(?:best\\s*seller|bestseller|best-selling|top\\s*selling)\\b|"
-    r"\\b(?:bought|purchased)\\s+in\\s+past\\s+month\\b|"
-    r"\\b\\d[\\d,]*\\s+reviews?\\b)",
+    r"(\b[\d,.]+\s*(?:k\\+?\s*)?(?:sold|purchased)\b|"
+    r"\b(?:best\s*seller|bestseller|best-selling|top\s*selling)\b|"
+    r"\b(?:bought|purchased)\s+in\s+past\s+month\b|"
+    r"\b\d[\d,]*\s+reviews?\b)",
     re.I,
 )
 
 
 def clean(value):
-    return re.sub(r"\\s+", " ", value or "").strip()
+    return re.sub(r"\s+", " ", value or "").strip()
 
 
 def metadata(soup, *keys):
@@ -97,7 +97,7 @@ def inspect_product(url):
 def search_candidates(category, query, seen):
     found = []
     for region in REGIONS:
-        q = f"{query} {region} " + " OR ".join(MARKETPLACES[:])
+        q = f"{query} {region} " + " ".join(MARKETPLACES)
         try:
             with DDGS() as ddgs:
                 results = ddgs.text(q, max_results=8, safesearch="moderate")
@@ -175,13 +175,13 @@ def main():
     products.extend(new_products)
     save_products(products)
     with open("TODAY.md", "w", encoding="utf-8") as f:
-        f.write(f"# Worldwide product discovery ({TODAY.isoformat()})\\n\\n")
-        f.write("Free public search. Sales signals are not independently audited. Add products to Benable manually.\\n\\n")
+        f.write(f"# Worldwide product discovery ({TODAY.isoformat()})\n\n")
+        f.write("Free public search. Sales signals are not independently audited. Add products to Benable manually.\n\n")
         for p in new_products:
-            f.write(f"## {p['title']}\\n")
-            f.write(f"- Category: {p['category']}\\n- Description: {p['description']}\\n")
-            f.write(f"- Sales signal: {p['sales_evidence']}\\n")
-            f.write(f"- Product page: {p['source_url']}\\n- Exact product image: {p['image_url']}\\n\\n")
+            f.write(f"## {p['title']}\n")
+            f.write(f"- Category: {p['category']}\n- Description: {p['description']}\n")
+            f.write(f"- Sales signal: {p['sales_evidence']}\n")
+            f.write(f"- Product page: {p['source_url']}\n- Exact product image: {p['image_url']}\n\n")
     print(f"Added {len(new_products)} product(s) using free public search.")
 
 
