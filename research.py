@@ -1,87 +1,189 @@
-"""Daily worldwide research: select products using recent, verifiable cross-market sales evidence."""
-import datetime, uuid
+"""Free worldwide product discovery using public DuckDuckGo search results.
+
+This does not use Gemini or any paid API. Search snippets are treated as evidence
+only when they explicitly mention a sales/ranking signal. Product pages must expose
+their own title, description and image metadata before they are accepted.
+"""
+import datetime
+import json
+import re
+import time
+import uuid
+from urllib.parse import urlparse
+
 import requests
-from common import gemini, extract_json, load_products, save_products
+from bs4 import BeautifulSoup
+from ddgs import DDGS
 
-CATS = ["home", "beauty", "fashion", "gadgets", "pets", "fitness"]
+from common import load_products, save_products
+
 PROFILE_LINK = "https://benable.com/MYCHOICE12"
-today = datetime.date.today()
-d = today.toordinal()
-todays_cats = [CATS[(d * 3 + i) % len(CATS)] for i in range(3)]
-products = load_products()
-known = [p.get("title", "") for p in products]
+CATEGORIES = {
+    "home": ["home best sellers products bought in past month", "home products best selling products sold"],
+    "beauty": ["beauty best sellers products bought in past month", "skincare makeup best selling products"],
+    "fashion": ["fashion accessories best sellers bought in past month", "fashion products best selling sold"],
+    "gadgets": ["electronics gadgets best sellers bought in past month", "popular tech gadgets best selling products"],
+    "pets": ["pet supplies best sellers bought in past month", "pet products best selling sold"],
+    "fitness": ["fitness equipment best sellers bought in past month", "fitness products best selling sold"],
+}
+MARKETPLACES = [
+    "Amazon US", "Amazon UK", "Amazon Canada", "Amazon Germany",
+    "Amazon Japan", "Walmart", "eBay", "Etsy", "AliExpress",
+    "Temu", "TikTok Shop",
+]
+REGIONS = ["United States", "United Kingdom", "Canada", "Germany", "Japan", "Australia", "India"]
 
-prompt = f"""Today is {today.isoformat()}. Research products currently selling the MOST WORLDWIDE, across all major regions and countries.
-Use live Google Search evidence, not guesses, old popularity, social-media hype alone, or generic evergreen recommendations.
-Find 3 distinct physical products with global demand from these categories: {', '.join(todays_cats)}.
-PRIORITY: products with the strongest recent sales evidence available (units sold, revenue, bestseller rank,
-"bought in past month", or current marketplace sales ranking). Prefer evidence from the last 7-30 days and compare demand across countries/regions where possible.
-Check Amazon Best Sellers and bought-in-past-month figures across major country marketplaces (Amazon US, UK, Canada, Germany, France, Italy, Spain, Japan, Australia, etc.); Walmart; eBay; Etsy; AliExpress; Temu; TikTok Shop across available countries; major regional retailers and marketplaces in Europe, Asia-Pacific, the Middle East, Latin America and other regions. Use the sources that provide accessible, credible, recent sales evidence. Do not limit research to the USA or to Amazon/Walmart. Do not claim an exact sales figure unless a source states it.
-For each product include a concise sales_evidence field with the source name, date/window, and exact metric/rank
-if available, plus a source_url to the specific product listing or sales evidence page.
-Avoid products already used: {known}.
-Only select products for which you can find a real product page AND a direct image URL for that exact product
-from the same retailer/brand site. The image URL must point to an image file, not a search page.
-Return ONLY a JSON array with up to 3 objects and keys:
-"title", "category", "brand", "description" (factual, max 220 chars),
-"why_trending" (one sentence tied to evidence), "sales_evidence", "source_url", "image_url".
-Do not invent sales figures, sources, URLs, specifications, or image URLs. If evidence or exact product image
-cannot be verified, omit that product. No markdown or extra text."""
+TODAY = datetime.date.today()
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; ProductResearchBot/1.0)"}
+SESSION = requests.Session()
+SESSION.headers.update(HEADERS)
 
-items = extract_json(gemini(prompt, search=True, require_search=True))
-if not isinstance(items, list):
-    raise RuntimeError("Research returned no product list; products.json was not changed.")
+# A result is eligible only if its own text states a sales or bestseller signal.
+SALES_SIGNAL = re.compile(
+    r"(\\b[\\d,.]+\\s*(?:k\\+?\\s*)?(?:sold|purchased)\\b|"
+    r"\\b(?:best\\s*seller|bestseller|best-selling|top\\s*selling)\\b|"
+    r"\\b(?:bought|purchased)\\s+in\\s+past\\s+month\\b|"
+    r"\\b\\d[\\d,]*\\s+reviews?\\b)",
+    re.I,
+)
 
-new = []
-seen = {x.strip().casefold() for x in known if x}
-for it in items:
-    if not isinstance(it, dict):
-        continue
-    required = ["title", "description", "source_url", "image_url", "sales_evidence"]
-    if any(not str(it.get(k, "")).strip() for k in required):
-        print("Skipping product missing sales evidence/source/image:", it.get("title", "unknown"))
-        continue
-    title_key = it["title"].strip().casefold()
-    if title_key in seen:
-        print("Skipping duplicate product:", it["title"])
-        continue
+
+def clean(value):
+    return re.sub(r"\\s+", " ", value or "").strip()
+
+
+def metadata(soup, *keys):
+    for key in keys:
+        tag = soup.find("meta", attrs={"property": key}) or soup.find("meta", attrs={"name": key})
+        if tag and tag.get("content"):
+            return clean(tag["content"])
+    return ""
+
+
+def inspect_product(url):
+    """Read the exact product page; return its own metadata and a verified image URL."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return None
     try:
-        page = requests.get(it["source_url"], timeout=20, headers={"User-Agent": "Mozilla/5.0"})
-        page.raise_for_status()
-        img = requests.get(it["image_url"], timeout=20, headers={"User-Agent": "Mozilla/5.0"}, stream=True)
-        img.raise_for_status()
-        if not img.headers.get("Content-Type", "").lower().startswith("image/"):
-            raise ValueError("image URL did not return image content")
-    except Exception as e:
-        print("Skipping product with unverified URL:", it.get("title"), e)
-        continue
-    seen.add(title_key)
-    new.append({
-        "id": uuid.uuid4().hex[:8],
-        "date": today.isoformat(),
-        "title": it["title"],
-        "category": it.get("category", ""),
-        "brand": it.get("brand", ""),
-        "description": it["description"],
-        "why_trending": it.get("why_trending", ""),
-        "sales_evidence": it["sales_evidence"],
-        "source_url": it["source_url"],
-        "image_url": it["image_url"],
-        "benable_link": PROFILE_LINK,
-        "posted_post": False,
-        "posted_reel": False,
-    })
+        response = SESSION.get(url, timeout=18, allow_redirects=True)
+        response.raise_for_status()
+        if "text/html" not in response.headers.get("Content-Type", "").lower():
+            return None
+        soup = BeautifulSoup(response.text[:2_000_000], "html.parser")
+        title = metadata(soup, "og:title", "twitter:title")
+        if not title and soup.title:
+            title = clean(soup.title.get_text(" ", strip=True))
+        description = metadata(soup, "og:description", "description", "twitter:description")
+        image = metadata(soup, "og:image", "twitter:image")
+        if not title or not description or not image:
+            return None
+        image_response = SESSION.get(image, timeout=18, stream=True, allow_redirects=True)
+        image_response.raise_for_status()
+        content_type = image_response.headers.get("Content-Type", "").lower()
+        if not content_type.startswith("image/"):
+            return None
+        return {
+            "title": title[:180],
+            "description": description[:220],
+            "image_url": image_response.url,
+            "source_url": response.url,
+        }
+    except Exception as exc:
+        print("Page/image verification skipped:", url, type(exc).__name__)
+        return None
 
-if not new:
-    raise RuntimeError("No products passed sales-evidence, source-page and exact-image checks. products.json unchanged.")
 
-products.extend(new)
-save_products(products)
-with open("TODAY.md", "w", encoding="utf-8") as f:
-    f.write(f"# Worldwide high-sales product research ({today.isoformat()})\\n\\n")
-    f.write("In products ko Benable mein manually add karein. Selection recent sales evidence par based hai.\\n\\n")
-    for p in new:
-        f.write(f"## {p['title']}\\n- Category: {p['category']} | Brand: {p['brand']}\\n")
-        f.write(f"- Sales evidence: {p['sales_evidence']}\\n- Description: {p['description']}\\n")
-        f.write(f"- Product source: {p['source_url']}\\n- Exact product image: {p['image_url']}\\n\\n")
-print("Added", len(new), "products with recent sales evidence and verified product image URLs.")
+def search_candidates(category, query, seen):
+    found = []
+    for region in REGIONS:
+        q = f"{query} {region} " + " OR ".join(MARKETPLACES[:])
+        try:
+            with DDGS() as ddgs:
+                results = ddgs.text(q, max_results=8, safesearch="moderate")
+                for result in results:
+                    href = result.get("href") or result.get("url") or ""
+                    snippet = clean(result.get("body", ""))
+                    heading = clean(result.get("title", ""))
+                    evidence_text = clean(heading + " " + snippet)
+                    if not href or not SALES_SIGNAL.search(evidence_text):
+                        continue
+                    host = urlparse(href).netloc.lower()
+                    if not host or any(x in host for x in ("duckduckgo.com", "google.com", "bing.com")):
+                        continue
+                    candidate = inspect_product(href)
+                    if not candidate:
+                        continue
+                    key = candidate["title"].casefold()
+                    if key in seen:
+                        continue
+                    candidate.update({
+                        "category": category,
+                        "brand": "",
+                        "sales_evidence": (
+                            f"Public search result retrieved {TODAY.isoformat()}; "
+                            f"listing/search text: {evidence_text[:350]}. "
+                            "This is a search-result signal, not independently audited sales data."
+                        ),
+                        "why_trending": "Public marketplace/search listing displayed a bestseller or sales-related signal; exact sales volume was not independently verified.",
+                    })
+                    found.append(candidate)
+                    seen.add(key)
+                    if len(found) >= 2:
+                        return found
+            time.sleep(1.5)
+        except Exception as exc:
+            print("Search temporarily unavailable:", region, type(exc).__name__)
+            time.sleep(3)
+    return found
+
+
+def main():
+    products = load_products()
+    seen = {clean(p.get("title", "")).casefold() for p in products if p.get("title")}
+    day_index = TODAY.toordinal()
+    categories = list(CATEGORIES)
+    start = day_index % len(categories)
+    categories = categories[start:] + categories[:start]
+    new_products = []
+
+    for category in categories:
+        for query in CATEGORIES[category]:
+            candidates = search_candidates(category, query, seen)
+            for item in candidates:
+                item.update({
+                    "id": uuid.uuid4().hex[:8],
+                    "date": TODAY.isoformat(),
+                    "benable_link": PROFILE_LINK,
+                    "posted_post": False,
+                    "posted_reel": False,
+                })
+                new_products.append(item)
+                if len(new_products) >= 3:
+                    break
+            if len(new_products) >= 3:
+                break
+        if len(new_products) >= 3:
+            break
+
+    if not new_products:
+        raise RuntimeError(
+            "Free search did not find any product with both a sales-related listing signal "
+            "and a verified product-page image. Existing products were left unchanged."
+        )
+
+    products.extend(new_products)
+    save_products(products)
+    with open("TODAY.md", "w", encoding="utf-8") as f:
+        f.write(f"# Worldwide product discovery ({TODAY.isoformat()})\\n\\n")
+        f.write("Free public search. Sales signals are not independently audited. Add products to Benable manually.\\n\\n")
+        for p in new_products:
+            f.write(f"## {p['title']}\\n")
+            f.write(f"- Category: {p['category']}\\n- Description: {p['description']}\\n")
+            f.write(f"- Sales signal: {p['sales_evidence']}\\n")
+            f.write(f"- Product page: {p['source_url']}\\n- Exact product image: {p['image_url']}\\n\\n")
+    print(f"Added {len(new_products)} product(s) using free public search.")
+
+
+if __name__ == "__main__":
+    main()
