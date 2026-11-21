@@ -4,7 +4,7 @@ writes the copy with Gemini, builds the media, publishes to Instagram + Facebook
 import os, sys, io, time, shutil, subprocess
 import requests
 from PIL import Image, ImageDraw, ImageFont
-from common import gemini, extract_json, load_products, save_products
+from common import load_products, save_products
 
 KIND = sys.argv[1] if len(sys.argv) > 1 else "post"
 DRY = os.getenv("DRY_RUN", "0") == "1"
@@ -20,23 +20,22 @@ def git(*a):
     subprocess.run(["git", *a], check=True)
 
 
-# ---------- copywriting ----------
+# ---------- free local copywriting ----------
 def make_copy(p):
-    prompt = f"""Write social media copy for this product. Audience: global English-speaking shoppers.
-Product: {p['title']}
-Facts (use ONLY these, do not invent features or claims): {p['description']}
-
-Return ONLY JSON: {{"hook": "max 8 words, scroll-stopping",
-"caption": "2-3 short lines in friendly American English, 2-3 emojis, ends with a call to action",
-"hashtags": ["8 to 10 relevant hashtags without the # sign"]}}
-Rules: no medical or income claims, no fake urgency or fake discounts, no 'best in the world'."""
-    return extract_json(gemini(prompt))
+    title = p.get("title", "This find")
+    category = p.get("category", "everyday")
+    description = p.get("description", "")
+    hook = f"A useful {category} find"
+    caption = f"{title} ✨\n{description[:180]}\nWorth a look if this fits your needs 👀"
+    words = [w.lower() for w in __import__("re").findall(r"[A-Za-z0-9]+", title + " " + category)]
+    hashtags = list(dict.fromkeys(words[:5] + ["shoppingfinds", "productfinds", "onlineshopping", "dailyfinds"]))
+    return {"hook": hook[:60], "caption": caption, "hashtags": hashtags[:10]}
 
 
 def captions(p, c, link):
     tags = " ".join("#" + t.strip("# ").replace(" ", "") for t in c["hashtags"][:10])
-    cta = f"Check this link if you want to buy:\n{PROFILE_LINK}"
-    caption = f"{c['caption']}\n\n{cta}\n\n{tags}"
+    cta = f"Check this link if you want to buy:\\n{PROFILE_LINK}"
+    caption = f"{c['caption']}\\n\\n{cta}\\n\\n{tags}"
     return caption, caption
 
 
