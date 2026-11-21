@@ -208,54 +208,63 @@ def main():
     new_products = []
     candidates_seen = set()
 
+    # Search broad Amazon deal language: sellers use both "% off" and "Save X%".
+    # One query per category keeps the free workflow within reasonable limits.
     for category, terms in CATEGORIES.items():
-        for term in terms:
-            for tier in DISCOUNT_TIERS:
-                query = f'site:amazon.com/dp "{tier}% off" {term}'
-                for row in search_web(query):
-                    href = amazon_product_url(row.get("href", ""))
-                    if not href or href in candidates_seen:
-                        continue
-                    candidates_seen.add(href)
-                    product = inspect_product(href)
-                    if not product:
-                        continue
-                    key = product["title"].casefold()
-                    if key in seen:
-                        continue
-                    product.update({
-                        "id": uuid.uuid4().hex[:8],
-                        "date": TODAY.isoformat(),
-                        "category": category,
-                        "brand": "",
-                        "benable_link": PROFILE_LINK,
-                        "posted_post": False,
-                        "posted_reel": False,
-                        "why_trending": f"Amazon US product page showed a verified {product['discount_percent']}% reduction from listed price. Discount is a deal signal, not proof of sales volume.",
-                        "deal_source": "Amazon US product page; prices and discount checked during discovery.",
-                    })
-                    seen.add(key)
-                    new_products.append(product)
-                    if len(new_products) >= MAX_RESULTS:
-                        break
-                if len(new_products) >= MAX_RESULTS:
-                    break
+        term = terms[0]
+        query = (
+            f'site:amazon.com ("30% off" OR "40% off" OR "50% off" OR '
+            f'"55% off" OR "Save 30%" OR "Save 40%" OR "Save 50%") {term}'
+        )
+        rows = search_web(query)
+        print(f"Category {category}: {len(rows)} search candidates")
+        inspected = 0
+        for row in rows:
+            evidence = clean(row.get("title", "") + " " + row.get("body", ""))
+            if not re.search(r"(?:30|40|50|55)\\s*%\\s*off|save\\s+(?:30|40|50|55)\\s*%", evidence, re.I):
+                continue
+            href = amazon_product_url(row.get("href", ""))
+            if not href or href in candidates_seen:
+                continue
+            candidates_seen.add(href)
+            inspected += 1
+            if inspected > 5:
+                break
+            product = inspect_product(href)
+            if not product:
+                continue
+            key = product["title"].casefold()
+            if key in seen:
+                continue
+            product.update({
+                "id": uuid.uuid4().hex[:8],
+                "date": TODAY.isoformat(),
+                "category": category,
+                "brand": "",
+                "benable_link": PROFILE_LINK,
+                "posted_post": False,
+                "posted_reel": False,
+                "why_trending": f"Amazon US product page showed a verified {product['discount_percent']}% reduction from listed price. Discount is a deal signal, not proof of sales volume.",
+                "deal_source": "Amazon US product page; prices and discount checked during discovery.",
+            })
+            seen.add(key)
+            new_products.append(product)
             if len(new_products) >= MAX_RESULTS:
                 break
         if len(new_products) >= MAX_RESULTS:
             break
 
     with open("TODAY.md", "w", encoding="utf-8") as f:
-        f.write(f"# Amazon US deals ({TODAY.isoformat()})\n\n")
-        f.write(f"Free public search. Only product pages with a verified discount of {MIN_DISCOUNT}% or more are included. Prices may change; check Amazon before sharing.\n\n")
+        f.write(f"# Amazon US deals ({TODAY.isoformat()})\\n\\n")
+        f.write(f"Free public search. Only product pages with a verified discount of {MIN_DISCOUNT}% or more are included. Prices may change; check Amazon before sharing.\\n\\n")
         if not new_products:
-            f.write("No product passed the Amazon page, image and price verification checks today. Nothing unverified was added.\n")
+            f.write("No product passed the Amazon page, image and price verification checks today. Search candidates are not treated as confirmed deals.\\n")
         for p in new_products:
-            f.write(f"## {p['title']}\n")
-            f.write(f"- Category: {p['category']}\n- Discount: {p['discount_percent']}% off\n")
-            f.write(f"- Original price: ${p['original_price']:.2f} {p['currency']}\n")
-            f.write(f"- Deal price: ${p['sale_price']:.2f} {p['currency']}\n")
-            f.write(f"- Product page: {p['source_url']}\n- Exact image: {p['image_url']}\n\n")
+            f.write(f"## {p['title']}\\n")
+            f.write(f"- Category: {p['category']}\\n- Discount: {p['discount_percent']}% off\\n")
+            f.write(f"- Original price: ${p['original_price']:.2f} {p['currency']}\\n")
+            f.write(f"- Deal price: ${p['sale_price']:.2f} {p['currency']}\\n")
+            f.write(f"- Product page: {p['source_url']}\\n- Exact image: {p['image_url']}\\n\\n")
 
     if new_products:
         products.extend(new_products)
