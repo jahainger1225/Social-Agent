@@ -1,5 +1,5 @@
-# Worldwide product discovery (2026-11-21)
+# Amazon US deals (2026-11-21)
 
-Free public search; sales signals are not independently audited. Add products to Benable manually.
+Free public search. Only product pages with a verified discount of 30% or more are included. Prices may change; check Amazon before sharing.
 
-No products passed the sales-signal, product-page and exact-image checks today. No unverified products were added.
+No product passed the Amazon page, image and price verification checks today. Nothing unverified was added.
