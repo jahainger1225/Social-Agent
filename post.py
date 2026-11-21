@@ -5,6 +5,7 @@ import os, sys, io, time, shutil, subprocess
 import requests
 from PIL import Image, ImageDraw, ImageFont
 from common import load_products, save_products
+from sheet_import import main as import_sheet
 
 KIND = sys.argv[1] if len(sys.argv) > 1 else "post"
 DRY = os.getenv("DRY_RUN", "0") == "1"
@@ -176,6 +177,7 @@ def fb_publish(url, message):
 
 
 def main():
+    import_sheet()
     products = load_products()
     cands = [x for x in products if not x.get(f"posted_{KIND}") and x.get("image_url") and x.get("source_url")]
     cands.sort(key=lambda x: x.get("date", ""))
