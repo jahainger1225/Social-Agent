@@ -96,7 +96,7 @@ def render(w, h, bg, text, size, pos="bottom", footer=None):
 
 def build_media(p, c):
     os.makedirs("out", exist_ok=True)
-    bg = fetch_image(p["image_url"])
+    bg = fetch_image(p["image_url"]) if p.get("image_url") else Image.new("RGB", (1080, 1350), (28, 39, 58))
     stamp = time.strftime("%Y%m%d-%H%M%S")
     if KIND == "post":
         img = render(1080, 1350, bg, p["title"], 64, "bottom", footer="See Benable profile")
@@ -179,7 +179,7 @@ def fb_publish(url, message):
 def main():
     import_sheet()
     products = load_products()
-    cands = [x for x in products if not x.get(f"posted_{KIND}") and x.get("image_url") and x.get("source_url")]
+    cands = [x for x in products if not x.get(f"posted_{KIND}") and x.get("source_url")]
     cands.sort(key=lambda x: x.get("date", ""))
     if not cands:
         os.makedirs("out", exist_ok=True)
@@ -187,7 +187,7 @@ def main():
             f.write(f"No eligible product found for {KIND}. Research workflow must add products first.\n")
         print(f"No eligible product found for {KIND}; diagnostic saved in out/NO_PRODUCT.txt")
         return
-    p = cands[0]
+    p = cands[0]\n    if not p.get("image_url"):\n        print("Using text-only product artwork; no unverified product image will be used.")
     link = PROFILE_LINK
     c = make_copy(p)
     ig_cap, fb_cap = captions(p, c, link)
