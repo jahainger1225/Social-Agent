@@ -41,15 +41,15 @@ SESSION = requests.Session()
 SESSION.headers.update(HEADERS)
 
 SALES_SIGNAL = re.compile(
-    r"(\\b[\\d,.]+\\s*(?:k\\+?\\s*)?(?:sold|purchased)\\b|"
-    r"\\b(?:best\\s*seller|bestseller|best-selling|top\\s*selling)\\b|"
-    r"\\b(?:bought|purchased)\\s+in\\s+past\\s+month\\b)",
+    r"(\b[\d,.]+\s*(?:k\+?\s*)?(?:sold|purchased)\b|"
+    r"\b(?:best\s*seller|bestseller|best-selling|top\s*selling)\b|"
+    r"\b(?:bought|purchased)\s+in\s+past\s+month\b)",
     re.I,
 )
 
 
 def clean(value):
-    return re.sub(r"\\s+", " ", value or "").strip()
+    return re.sub(r"\s+", " ", value or "").strip()
 
 
 def search_bing_rss(query):
@@ -198,10 +198,10 @@ def main():
             break
 
     with open("TODAY.md", "w", encoding="utf-8") as f:
-        f.write(f"# Worldwide product discovery ({TODAY.isoformat()})\\n\\n")
-        f.write("Free public search; sales signals are not independently audited. Add products to Benable manually.\\n\\n")
+        f.write(f"# Worldwide product discovery ({TODAY.isoformat()})\n\n")
+        f.write("Free public search; sales signals are not independently audited. Add products to Benable manually.\n\n")
         if not new_products:
-            f.write("No products passed the sales-signal, product-page and exact-image checks today. No unverified products were added.\\n")
+            f.write("No products passed the sales-signal, product-page and exact-image checks today. No unverified products were added.\n")
         for p in new_products:
             p.update({
                 "id": uuid.uuid4().hex[:8],
@@ -210,10 +210,10 @@ def main():
                 "posted_post": False,
                 "posted_reel": False,
             })
-            f.write(f"## {p['title']}\\n")
-            f.write(f"- Category: {p['category']}\\n- Description: {p['description']}\\n")
-            f.write(f"- Sales signal: {p['sales_evidence']}\\n")
-            f.write(f"- Product page: {p['source_url']}\\n- Exact product image: {p['image_url']}\\n\\n")
+            f.write(f"## {p['title']}\n")
+            f.write(f"- Category: {p['category']}\n- Description: {p['description']}\n")
+            f.write(f"- Sales signal: {p['sales_evidence']}\n")
+            f.write(f"- Product page: {p['source_url']}\n- Exact product image: {p['image_url']}\n\n")
 
     if new_products:
         products.extend(new_products)
