@@ -1,6 +1,6 @@
 """Usage: python post.py post|reel
 Picks the first product with an exact product image and source page that has not been posted in this format,
-writes the copy with Gemini, builds the media, publishes to Instagram + Facebook Page."""
+generates copy locally without a paid AI API, builds the media, publishes to Instagram + Facebook Page."""
 import os, sys, io, time, shutil, subprocess
 import requests
 from PIL import Image, ImageDraw, ImageFont
@@ -34,8 +34,8 @@ def make_copy(p):
 
 def captions(p, c, link):
     tags = " ".join("#" + t.strip("# ").replace(" ", "") for t in c["hashtags"][:10])
-    cta = f"Check this link if you want to buy:\\n{PROFILE_LINK}"
-    caption = f"{c['caption']}\\n\\n{cta}\\n\\n{tags}"
+    cta = f"Check this link if you want to buy:\n{PROFILE_LINK}"
+    caption = f"{c['caption']}\n\n{cta}\n\n{tags}"
     return caption, caption
 
 
