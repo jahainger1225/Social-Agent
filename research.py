@@ -7,7 +7,6 @@ page exposes title, description and a valid product image.
 import datetime
 import json
 import re
-import time
 import uuid
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, unquote
@@ -30,10 +29,7 @@ CATEGORIES = {
 MARKETPLACES = [
     "Amazon", "Walmart", "eBay", "Etsy", "AliExpress", "Temu", "TikTok Shop"
 ]
-REGIONS = [
-    ("United States", "US"), ("United Kingdom", "UK"), ("Canada", "CA"),
-    ("Germany", "DE"), ("Japan", "JP"), ("Australia", "AU"), ("India", "IN"),
-]
+REGIONS = ["United States", "United Kingdom", "Canada", "Germany", "Japan", "Australia", "India"]
 
 TODAY = datetime.date.today()
 HEADERS = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36"}
@@ -55,7 +51,7 @@ def clean(value):
 def search_bing_rss(query):
     """Bing's public RSS search endpoint; no key required."""
     url = "https://www.bing.com/search"
-    response = SESSION.get(url, params={"format": "rss", "q": query}, timeout=20)
+    response = SESSION.get(url, params={"format": "rss", "q": query}, timeout=12)
     response.raise_for_status()
     root = ET.fromstring(response.text)
     rows = []
@@ -115,7 +111,7 @@ def inspect_product(url):
     if any(x in host for x in ("bing.com", "duckduckgo.com", "google.com", "yahoo.com")):
         return None
     try:
-        response = SESSION.get(url, timeout=18, allow_redirects=True)
+        response = SESSION.get(url, timeout=10, allow_redirects=True)
         response.raise_for_status()
         if "text/html" not in response.headers.get("Content-Type", "").lower():
             return None
@@ -131,7 +127,7 @@ def inspect_product(url):
             image = "https:" + image
         if image.startswith("/"):
             image = response.url.rstrip("/") + image
-        image_response = SESSION.get(image, timeout=18, stream=True, allow_redirects=True)
+        image_response = SESSION.get(image, timeout=8, stream=True, allow_redirects=True)
         image_response.raise_for_status()
         if not image_response.headers.get("Content-Type", "").lower().startswith("image/"):
             return None
@@ -147,53 +143,56 @@ def inspect_product(url):
 
 
 def discover(category, query, seen):
+    """One broad search per category; keep the daily run bounded and predictable."""
+    marketplace_terms = "Amazon OR Walmart OR eBay OR Etsy OR AliExpress OR Temu OR TikTok Shop"
+    region_terms = " OR ".join(REGIONS)
+    q = f'{query} ({marketplace_terms}) ({region_terms})'
+    results = search_web(q)
     found = []
-    for region, country in REGIONS:
-        for marketplace in MARKETPLACES:
-            q = f"{query} {marketplace} {region}"
-            results = search_web(q)
-            for row in results:
-                href = row.get("href", "")
-                evidence = clean(row.get("title", "") + " " + row.get("body", ""))
-                if not href or not SALES_SIGNAL.search(evidence):
-                    continue
-                product = inspect_product(href)
-                if not product:
-                    continue
-                key = product["title"].casefold()
-                if key in seen:
-                    continue
-                product.update({
-                    "category": category,
-                    "brand": "",
-                    "sales_evidence": (
-                        f"{row.get('engine')} public search result, {TODAY.isoformat()}, "
-                        f"{country}: {evidence[:300]}. Search-result signal only; "
-                        "not independently audited sales volume."
-                    ),
-                    "why_trending": "Public search result showed an explicit bestseller or sold-count signal; exact sales volume was not independently verified.",
-                })
-                seen.add(key)
-                found.append(product)
-                if len(found) >= 2:
-                    return found
-            time.sleep(0.5)
-    return found
+    inspected = 0
 
+    for row in results:
+        href = row.get("href", "")
+        evidence = clean(row.get("title", "") + " " + row.get("body", ""))
+        if not href or not SALES_SIGNAL.search(evidence):
+            continue
+        inspected += 1
+        if inspected > 6:
+            break
+        product = inspect_product(href)
+        if not product:
+            continue
+        key = product["title"].casefold()
+        if key in seen:
+            continue
+        product.update({
+            "category": category,
+            "brand": "",
+            "sales_evidence": (
+                f'{row.get("engine")} public search result, {TODAY.isoformat()}: '
+                f'{evidence[:300]}. Search-result signal only; not independently audited sales volume.'
+            ),
+            "why_trending": "A public search result showed a bestseller or sold-count phrase; actual sales volume was not independently verified.",
+        })
+        seen.add(key)
+        found.append(product)
+        if len(found) >= 2:
+            break
+    return found
 
 def main():
     products = load_products()
     seen = {clean(p.get("title", "")).casefold() for p in products if p.get("title")}
     category_names = list(CATEGORIES)
-    start = TODAY.toordinal() % len(category_names)
-    category_names = category_names[start:] + category_names[:start]
+    # Rotate category order daily so every category gets a fair chance.
+    offset = TODAY.toordinal() % len(category_names)
+    category_names = category_names[offset:] + category_names[:offset]
     new_products = []
 
     for category in category_names:
-        for query in CATEGORIES[category]:
-            new_products.extend(discover(category, query, seen))
-            if len(new_products) >= 3:
-                break
+        # Use one query per category instead of hundreds of marketplace/region requests.
+        query = CATEGORIES[category][0]
+        new_products.extend(discover(category, query, seen))
         if len(new_products) >= 3:
             break
 
