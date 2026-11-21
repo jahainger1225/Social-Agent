@@ -38,7 +38,7 @@ SESSION.headers.update(HEADERS)
 
 
 def clean(value):
-    return re.sub(r"\\s+", " ", str(value or "")).strip()
+    return re.sub(r"\s+", " ", str(value or "")).strip()
 
 
 def amazon_product_url(url):
@@ -107,9 +107,9 @@ def price_number(value):
         return None
     if isinstance(value, (int, float)):
         return float(value)
-    m = re.search(r"(?:US\\s*\\$|\\$)\\s*([\\d,]+(?:\\.\\d{1,2})?)", str(value))
+    m = re.search(r"(?:US\s*\$|\$)\s*([\d,]+(?:\.\d{1,2})?)", str(value))
     if not m:
-        m = re.search(r"([\\d,]+\\.\\d{2})", str(value))
+        m = re.search(r"([\d,]+\.\d{2})", str(value))
     return float(m.group(1).replace(",", "")) if m else None
 
 
@@ -150,12 +150,12 @@ def extract_prices(soup):
             if old:
                 break
     if old is None:
-        m = re.search(r"(?:List Price|Typical price|Was)\\s*:?\\s*(US\\s*\\$|\\$)\\s*([\\d,]+\\.\\d{2})", text, re.I)
+        m = re.search(r"(?:List Price|Typical price|Was)\s*:?\s*(US\s*\$|\$)\s*([\d,]+\.\d{2})", text, re.I)
         if m:
             old = float(m.group(2).replace(",", ""))
     if current is None:
         # Fallback to an explicit current-price label only, never an arbitrary page number.
-        m = re.search(r"(?:Deal Price|Price)\\s*:?\\s*(US\\s*\\$|\\$)\\s*([\\d,]+\\.\\d{2})", text, re.I)
+        m = re.search(r"(?:Deal Price|Price)\s*:?\s*(US\s*\$|\$)\s*([\d,]+\.\d{2})", text, re.I)
         if m:
             current = float(m.group(2).replace(",", ""))
     return current, old, currency
