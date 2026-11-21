@@ -221,7 +221,7 @@ def main():
         inspected = 0
         for row in rows:
             evidence = clean(row.get("title", "") + " " + row.get("body", ""))
-            if not re.search(r"(?:30|40|50|55)\\s*%\\s*off|save\\s+(?:30|40|50|55)\\s*%", evidence, re.I):
+            if not re.search(r"(?:30|40|50|55)\s*%\s*off|save\s+(?:30|40|50|55)\s*%", evidence, re.I):
                 continue
             href = amazon_product_url(row.get("href", ""))
             if not href or href in candidates_seen:
@@ -255,16 +255,16 @@ def main():
             break
 
     with open("TODAY.md", "w", encoding="utf-8") as f:
-        f.write(f"# Amazon US deals ({TODAY.isoformat()})\\n\\n")
-        f.write(f"Free public search. Only product pages with a verified discount of {MIN_DISCOUNT}% or more are included. Prices may change; check Amazon before sharing.\\n\\n")
+        f.write(f"# Amazon US deals ({TODAY.isoformat()})\n\n")
+        f.write(f"Free public search. Only product pages with a verified discount of {MIN_DISCOUNT}% or more are included. Prices may change; check Amazon before sharing.\n\n")
         if not new_products:
-            f.write("No product passed the Amazon page, image and price verification checks today. Search candidates are not treated as confirmed deals.\\n")
+            f.write("No product passed the Amazon page, image and price verification checks today. Search candidates are not treated as confirmed deals.\n")
         for p in new_products:
-            f.write(f"## {p['title']}\\n")
-            f.write(f"- Category: {p['category']}\\n- Discount: {p['discount_percent']}% off\\n")
-            f.write(f"- Original price: ${p['original_price']:.2f} {p['currency']}\\n")
-            f.write(f"- Deal price: ${p['sale_price']:.2f} {p['currency']}\\n")
-            f.write(f"- Product page: {p['source_url']}\\n- Exact image: {p['image_url']}\\n\\n")
+            f.write(f"## {p['title']}\n")
+            f.write(f"- Category: {p['category']}\n- Discount: {p['discount_percent']}% off\n")
+            f.write(f"- Original price: ${p['original_price']:.2f} {p['currency']}\n")
+            f.write(f"- Deal price: ${p['sale_price']:.2f} {p['currency']}\n")
+            f.write(f"- Product page: {p['source_url']}\n- Exact image: {p['image_url']}\n\n")
 
     if new_products:
         products.extend(new_products)
