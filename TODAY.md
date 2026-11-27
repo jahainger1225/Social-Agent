@@ -1,4 +1,4 @@
-# Amazon US deals (2026-11-26)
+# Amazon US deals (2026-11-27)
 
 Free public search. Only product pages with a verified discount of 30% or more are included. Prices may change; check Amazon before sharing.
 
